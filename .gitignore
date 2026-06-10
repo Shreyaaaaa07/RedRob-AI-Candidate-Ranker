@@ -153,6 +153,20 @@ logs/*
 !outputs/.gitkeep
 !logs/.gitkeep
 
-
+# Large datasets
 data/candidates.jsonl
 data/*.jsonl
+
+# Cache
+__pycache__/
+*.pyc
+
+# Virtual env
+venv/
+.env
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Outputs
+outputs/

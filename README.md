@@ -41,6 +41,19 @@ redrob-ai-ranker/
 - Python 3.9+
 - pip or conda
 
+## Dataset Setup
+
+Due to GitHub file size limitations, the main `candidates.jsonl` dataset is not included in this repository.
+
+Before running the project, place the following files inside the `data/` directory:
+
+- candidates.jsonl
+- candidate_schema.json
+- sample_candidates.json
+- job_description.docx
+- redrob_signals_doc.docx
+
+
 ### Setup
 
 1. **Clone the repository**
