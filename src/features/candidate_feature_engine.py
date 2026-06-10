@@ -701,7 +701,7 @@ class ScoringEngine:
         # Risk 4: Experience inconsistency (handled separately)
         
         # Risk 5: Low profile completeness
-        completeness = profile.get('profile_completeness_score', 0)
+        completeness = signals.get('profile_completeness_score', 0)
         if completeness < 30:
             risk_score += 15
             risk_flags.append(f"Very incomplete profile: {completeness}%")
@@ -844,16 +844,16 @@ class CandidateFeatureEngine:
         )
         
         # Engagement
-        completeness = profile.get('profile_completeness_score', 0) or 0
+        completeness = signals.get('profile_completeness_score', 0) or 0
         response_time = signals.get('avg_response_time_hours', 0) or 24
         vector.engagement_score = self.scorer.score_engagement(
             completeness, response_time, resp_rate, vector.evidence['engagement']
         )
         
         # Availability
-        open_to_work = profile.get('open_to_work', False) or False
-        notice_days = profile.get('notice_period_days', 60) or 60
-        relocate = profile.get('willing_to_relocate', False) or False
+        open_to_work = signals.get('open_to_work_flag', False) or False
+        notice_days = signals.get('notice_period_days', 60) or 60
+        relocate = signals.get('willing_to_relocate', False) or False
         vector.availability_score = self.scorer.score_availability(
             open_to_work, notice_days, relocate, vector.evidence['availability']
         )

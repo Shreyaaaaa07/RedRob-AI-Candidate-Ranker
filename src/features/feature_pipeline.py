@@ -16,8 +16,8 @@ import logging
 from pathlib import Path
 from datetime import datetime
 
-from jd_parser import parse_jd_file
-from candidate_feature_engine import CandidateFeatureEngine
+from src.features.jd_parser import parse_jd_file
+from src.features.candidate_feature_engine import CandidateFeatureEngine
 from src.data.load_data import CandidateDataLoader
 
 # Configure logging
