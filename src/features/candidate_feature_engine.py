@@ -389,70 +389,115 @@ class ScoringEngine:
     # ========== CAREER ANALYSIS ==========
     
     def score_career_stability(
-        self, career_history: List[Dict],
-        evidence_list: List[str], risk_flags: List[str]
+        self,
+        career_history: List[Dict],
+        evidence_list: List[str],
+        risk_flags: List[str]
     ) -> float:
         """
         Score career stability based on tenure and job switching patterns.
-        
+
         Don't penalize reasonable growth - penalize excessive hopping.
         """
+
         if not career_history or len(career_history) < 2:
-            return 50.0  # Neutral
-        
-        # Calculate average tenure
+            return 50.0
+
+        # -----------------------------
+        # Calculate tenure for each job
+        # -----------------------------
         tenures = []
+
         for job in career_history:
-            start = job.get('start_date')
-            end = job.get('end_date')
-            if start and end:
-                # Parse dates (assume YYYY-MM format)
+
+            # Prefer dataset duration if available
+            duration = job.get("duration_months")
+
+            if duration is not None:
                 try:
-                    start_date = datetime.strptime(start, '%Y-%m')
-                    end_date = datetime.strptime(end, '%Y-%m')
-                    tenure_months = (end_date - start_date).days / 30.44
-                    if tenure_months > 0:
-                        tenures.append(tenure_months)
+                    duration = float(duration)
+                    if duration > 0:
+                        tenures.append(duration)
+                        continue
                 except:
                     pass
-        
+
+            # Fallback to date calculation
+            start = job.get("start_date")
+            end = job.get("end_date")
+
+            if not start:
+                continue
+
+            try:
+                start_date = datetime.strptime(start, "%Y-%m-%d")
+
+                if end is None:
+                    end_date = datetime.now()
+                else:
+                    end_date = datetime.strptime(end, "%Y-%m-%d")
+
+                tenure_months = (end_date - start_date).days / 30.44
+
+                if tenure_months > 0:
+                    tenures.append(tenure_months)
+
+            except Exception:
+                continue
+
         if not tenures:
             return 50.0
-        
+
         avg_tenure = np.mean(tenures)
+        total_years = np.sum(tenures) / 12
         num_jobs = len(career_history)
-        job_switch_rate = num_jobs / (np.sum(tenures) / 12) if np.sum(tenures) > 0 else 0
-        
-        # Scoring logic
+
+        job_switch_rate = (
+            num_jobs / total_years
+            if total_years > 0
+            else 0
+        )
+
         score = 0.0
-        
-        # Average tenure: 3+ years is good
+
+        # Average tenure
         if avg_tenure >= 36:
             score += 50
-            evidence_list.append(f"Good stability: avg {avg_tenure/12:.1f}y tenure")
+            evidence_list.append(
+                f"Good stability: avg {avg_tenure / 12:.1f}y tenure"
+            )
         elif avg_tenure >= 24:
             score += 35
-            evidence_list.append(f"Decent stability: avg {avg_tenure/12:.1f}y tenure")
+            evidence_list.append(
+                f"Decent stability: avg {avg_tenure / 12:.1f}y tenure"
+            )
         else:
             score += 20
-        
-        # Job switching: < 1 switch per year is good
+
+        # Job switching
         if job_switch_rate <= 1:
             score += 30
-            evidence_list.append(f"Good retention: {num_jobs} jobs in {np.sum(tenures)/12:.0f}y")
+            evidence_list.append(
+                f"Good retention: {num_jobs} jobs in {total_years:.1f}y"
+            )
         elif job_switch_rate <= 2:
             score += 15
         else:
             score = max(0, score - 20)
-            risk_flags.append(f"High job switching: {job_switch_rate:.1f} jobs/year")
-        
-        # Recent progression
-        if len(career_history) > 0:
-            latest_role = career_history[0].get('title', '').lower()
-            if any(word in latest_role for word in ["senior", "lead", "staff", "principal"]):
-                score += 20
-                evidence_list.append("Career progression: senior role")
-        
+            risk_flags.append(
+                f"High job switching: {job_switch_rate:.1f} jobs/year"
+            )
+
+        # Senior progression
+        latest_role = career_history[0].get("title", "").lower()
+
+        if any(
+            word in latest_role
+            for word in ["senior", "lead", "staff", "principal"]
+        ):
+            score += 20
+            evidence_list.append("Career progression: senior role")
+
         return min(100.0, max(0.0, score))
     
     def score_experience_consistency(
@@ -470,10 +515,11 @@ class ScoringEngine:
         # Calculate actual years from career history
         start_dates = []
         for job in career_history:
-            start = job.get('start_date')
+            start = job.get("start_date")
+
             if start:
                 try:
-                    start_date = datetime.strptime(start, '%Y-%m')
+                    start_date = datetime.strptime(start, "%Y-%m-%d")
                     start_dates.append(start_date)
                 except:
                     pass
