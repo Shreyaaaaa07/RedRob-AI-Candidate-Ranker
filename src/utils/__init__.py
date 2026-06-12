@@ -1,3 +1,8 @@
 """Utility functions module."""
 
-__all__ = []
+from .skill_extractor import extract_atomic_skills, CANONICAL_SKILLS
+
+__all__ = [
+    "extract_atomic_skills",
+    "CANONICAL_SKILLS",
+]

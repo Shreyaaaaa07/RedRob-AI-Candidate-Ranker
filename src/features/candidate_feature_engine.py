@@ -22,6 +22,8 @@ from datetime import datetime, timedelta
 import numpy as np
 from tqdm import tqdm
 
+from src.utils import extract_atomic_skills
+
 logger = logging.getLogger(__name__)
 
 
@@ -812,9 +814,100 @@ class CandidateFeatureEngine:
         # Skill match
         jd_must_have = self.jd_features.get('must_have_skills', [])
         jd_preferred = self.jd_features.get('preferred_skills', [])
+                # Extract skills from explicit skills section
+        candidate_skills = [s.get("name", "") for s in skills]
+
+        # Extract atomic skills from profile summary using canonical vocabulary
+        summary_text = profile.get("summary", "") or ""
+        if summary_text:
+            candidate_skills.extend(extract_atomic_skills(summary_text))
+
+        # Extract atomic skills from headline
+        headline_text = profile.get("headline", "") or ""
+        if headline_text:
+            candidate_skills.extend(extract_atomic_skills(headline_text))
+
+        # Extract atomic skills from career descriptions
+        for job in career_history:
+            description = job.get("description", "") or ""
+            if description:
+                candidate_skills.extend(extract_atomic_skills(description))
+
+        # Remove duplicates and empty strings
+        candidate_skills = list(set([s.strip() for s in candidate_skills if s and s.strip()]))
+        candidate_skills = sorted(candidate_skills)
+
+        # candidate skills is already prepared
+
+        if candidate_id == "CAND_0000024":
+            print("\n" + "="*80)
+            print("COMPREHENSIVE DEBUG - SKILL MATCHING")
+            print("="*80)
+            
+            print("\n1. CANDIDATE SKILLS EXTRACTION")
+            print(f"   Explicit skills from 'skills' field: {[s.get('name', '') for s in skills]}")
+            print(f"   From summary: {extract_atomic_skills(profile.get('summary', ''))}")
+            print(f"   From headline: {extract_atomic_skills(profile.get('headline', ''))}")
+            for i, job in enumerate(career_history[:3]):
+                desc_skills = extract_atomic_skills(job.get('description', ''))
+                print(f"   From job {i} ({job.get('title', 'Unknown')}): {desc_skills}")
+            
+            print(f"\n   FINAL Candidate Skills (deduplicated): {len(candidate_skills)} total")
+            for skill in sorted(candidate_skills):
+                print(f"      - {skill}")
+            
+            print(f"\n2. JD REQUIREMENTS")
+            print(f"   Must-have skills: {len(jd_must_have)} total")
+            for skill in sorted(jd_must_have):
+                print(f"      - {skill}")
+            
+            print(f"\n   Preferred skills: {len(jd_preferred)} total")
+            for skill in sorted(jd_preferred):
+                print(f"      - {skill}")
+            
+            print(f"\n3. SKILL MATCHING ANALYSIS")
+            candidate_skills_lower = set(s.lower() for s in candidate_skills)
+            must_have_lower = set(s.lower() for s in jd_must_have)
+            preferred_lower = set(s.lower() for s in jd_preferred) if jd_preferred else set()
+            
+            must_have_matches = sum(1 for skill in must_have_lower if any(
+                skill in cs or cs in skill for cs in candidate_skills_lower
+            ))
+            
+            preferred_matches = sum(1 for skill in preferred_lower if any(
+                skill in cs or cs in skill for cs in candidate_skills_lower
+            ))
+            
+            print(f"   Must-have matches: {must_have_matches}/{len(jd_must_have)}")
+            print(f"   Preferred matches: {preferred_matches}/{len(jd_preferred)}")
+            
+            # Calculate expected score
+            if must_have_lower:
+                must_have_score = (must_have_matches / len(must_have_lower)) * 60
+            else:
+                must_have_score = 60
+            
+            preferred_bonus = min(40, (preferred_matches / max(1, len(preferred_lower))) * 40) if preferred_lower else 0
+            expected_score = must_have_score + preferred_bonus
+            
+            print(f"\n   Score calculation:")
+            print(f"      must_have_score = ({must_have_matches}/{len(jd_must_have)}) * 60 = {must_have_score:.4f}")
+            print(f"      preferred_bonus = ({preferred_matches}/{max(1, len(jd_preferred))}) * 40 = {preferred_bonus:.4f}")
+            print(f"      EXPECTED TOTAL SCORE = {expected_score:.4f}")
+            
+            print(f"\n4. EXACT INTERSECTIONS")
+            exact_intersection = candidate_skills_lower & must_have_lower
+            print(f"   Must-have intersection: {exact_intersection}")
+            exact_pref_intersection = candidate_skills_lower & preferred_lower
+            print(f"   Preferred intersection: {exact_pref_intersection}")
+            
+            print("="*80 + "\n")
+
         vector.skill_match_score = self.scorer.score_skill_match(
-            [s.get('name', '') for s in skills],
-            jd_must_have, jd_preferred, vector.evidence['skill_match']
+            candidate_skills,
+            jd_must_have,
+            jd_preferred,
+            vector.evidence["skill_match"]
         )
         
         # Production ML

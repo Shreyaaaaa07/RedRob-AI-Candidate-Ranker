@@ -74,6 +74,67 @@ class JDParser:
     Uses pattern matching, keyword extraction, and heuristics.
     """
     
+    # Canonical skill vocabulary for clean extraction
+    CANONICAL_SKILLS = {
+        # Programming languages
+        "python", "java", "c++", "go", "rust", "typescript", "javascript",
+        "scala", "kotlin", "c#", "r", "julia", "bash", "shell", "sql",
+        
+        # Vector databases and search infrastructure
+        "faiss", "pinecone", "milvus", "qdrant", "weaviate", "elasticsearch",
+        "opensearch", "annoy", "lsh", "hnsw", "pgvector", "pgvecor",
+        "vector database", "vector db", "embedding index", "similarity index",
+        "ann index", "approximate nearest neighbor",
+        
+        # Search and retrieval concepts
+        "retrieval", "semantic search", "hybrid search", "dense retrieval",
+        "sparse retrieval", "bm25", "lexical search", "neural retrieval",
+        "cross-encoder", "bi-encoder", "dense embedding", "sparse embedding",
+        "ranking system", "search system", "recommendation system",
+        "candidate retrieval", "information retrieval", "ir system",
+        "retrieval quality", "search quality", "ranking quality",
+        
+        # Embedding models and frameworks
+        "sentence-transformers", "openai embeddings", "azure openai", "cohere",
+        "anthropic", "bge", "e5", "nomic embed", "jina embeddings",
+        "contrastive search", "embeddings", "embedding model",
+        
+        # Evaluation metrics and frameworks
+        "ndcg", "mrr", "map", "mean average precision", "mean reciprocal rank",
+        "precision@k", "recall@k", "dcg", "idcg", "evaluation framework",
+        "evaluation metrics", "evaluation", "metric", "ranking quality",
+        "offline evaluation", "online evaluation", "online metric",
+        "a/b test", "ab test", "a/b testing", "ab testing",
+        
+        # ML/AI frameworks and tools
+        "pytorch", "tensorflow", "jax", "huggingface", "transformers",
+        "scikit-learn", "sklearn", "xgboost", "lightgbm", "catboost",
+        "keras", "torch", "fastapi", "flask", "django",
+        
+        # LLM and integration
+        "langchain", "llama-index", "haystack", "vllm", "ollama",
+        "openai", "gpt", "claude", "llm", "large language model",
+        "fine-tuning", "fine-tune", "prompt engineering", "rag",
+        "retrieval-augmented", "rag system",
+        
+        # Infrastructure and deployment
+        "production", "docker", "kubernetes", "aws", "gcp", "azure",
+        "ci/cd", "deployment", "scaling", "distributed systems",
+        "microservices", "serverless", "inference", "serving", "real-time",
+        
+        # Databases and data
+        "postgres", "postgresql", "mysql", "mongodb", "redis", "dynamodb",
+        "s3", "data pipeline", "etl", "feature engineering",
+        
+        # Other technical concepts
+        "system design", "architecture", "design patterns", "algorithms",
+        
+        # Soft skills and methodologies
+        "open source", "github", "git", "agile", "scrum", "leadership",
+        "collaboration", "communication", "ownership", "execution",
+        "decision making", "product thinking",
+    }
+    
     # Keyword definitions for different scoring categories
     EVALUATION_KEYWORDS = {
         "ndcg", "mean reciprocal rank", "mrr", "map", "mean average precision",
@@ -326,24 +387,75 @@ class JDParser:
             skills_text = unwanted_section.group(1)
             self.features.explicitly_unwanted_skills = self._extract_skills_from_text(skills_text)
     
-    def _extract_skills_from_text(self, text: str) -> List[str]:
-        """Extract individual skills from a text section"""
-        skills = []
+    def _normalize_text(self, text: str) -> str:
+        """
+        Normalize text for skill matching.
         
-        # Look for bullet points or numbered lists
-        lines = text.split('\n')
-        for line in lines:
-            # Remove leading bullet/number
-            line = re.sub(r'^[\s•\-\*\d+\.]+', '', line).strip()
+        Args:
+            text: Raw text to normalize
             
-            # Extract skill chunks (split by commas if they exist)
-            if line:
-                chunks = [s.strip() for s in line.split(',')]
-                skills.extend([c for c in chunks if len(c) > 2])
+        Returns:
+            Normalized text (lowercase, punctuation cleaned)
+        """
+        # Convert to lowercase
+        text = text.lower()
         
-        # Clean up and deduplicate
-        skills = list(set([s[:100] for s in skills if s]))
-        return sorted(skills)
+        # Replace common separators with spaces
+        text = re.sub(r'[—\-–•]', ' ', text)
+        
+        # Remove extra punctuation but keep alphanumeric and spaces
+        text = re.sub(r'[^\w\s@#\+/]', ' ', text)
+        
+        # Remove extra whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        return text
+    
+    def _extract_atomic_skills(self, text: str) -> List[str]:
+        """
+        Extract clean, atomic skills from text using canonical vocabulary.
+        
+        This is the core skill extraction logic that prevents full sentences
+        from being stored as skills.
+        
+        Args:
+            text: Text to extract skills from (raw, may contain sentence fragments)
+            
+        Returns:
+            Sorted list of clean, unique skills
+        """
+        found_skills = set()
+        
+        # Normalize the input text
+        normalized_text = self._normalize_text(text)
+        
+        # For each skill in canonical vocabulary, check if it appears in text
+        for skill in self.CANONICAL_SKILLS:
+            # Create a word-boundary pattern to match whole skills
+            # This prevents "python" from matching "copython" or similar
+            pattern = r'\b' + re.escape(skill) + r'\b'
+            
+            if re.search(pattern, normalized_text):
+                found_skills.add(skill)
+        
+        # Sort and return
+        return sorted(list(found_skills))
+    
+    def _extract_skills_from_text(self, text: str) -> List[str]:
+        """
+        Extract individual skills from a text section.
+        
+        Uses the atomic skill extraction method to ensure only clean,
+        recognized skills are returned (not full sentences or phrases).
+        
+        Args:
+            text: Raw text from a skills section
+            
+        Returns:
+            Sorted list of clean, unique skills
+        """
+        # Use the atomic extraction method with canonical vocabulary
+        return self._extract_atomic_skills(text)
     
     def _extract_technical_details(self, text_lower: str) -> None:
         """Extract domains, tools, frameworks"""
