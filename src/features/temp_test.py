@@ -1,14 +1,8 @@
 import pandas as pd
 
-df = pd.read_parquet("outputs/candidate_features.parquet")
+df = pd.read_parquet("outputs/ranked_candidates.parquet")
 
-print(df["skill_match_score"].describe())
+print(df.isna().sum().sum())
+print(df["candidate_id"].duplicated().sum())
 
-print(
-    df.sort_values(
-        "skill_match_score",
-        ascending=False
-    )[
-        ["candidate_id", "skill_match_score"]
-    ].head(20)
-)
+print(df["hybrid_score"].is_monotonic_decreasing)

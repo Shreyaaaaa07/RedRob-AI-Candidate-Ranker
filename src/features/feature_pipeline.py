@@ -193,7 +193,6 @@ class FeatureEngineeringPipeline:
         for field in score_fields:
             scores = [getattr(v, field) for v in vectors]
             if len(scores) == 0:
-                print(f"DEBUG: No scores found for {field}")
                 continue
                         
             summary['score_statistics'][field] = {
@@ -236,7 +235,7 @@ class FeatureEngineeringPipeline:
         logger.info("\nTop score statistics:")
         
         for field in ['experience_match_score', 'production_ml_score', 'retrieval_score',
-                      'recruitment_interest_score', 'career_stability_score']:
+                      'recruiter_interest_score', 'career_stability_score']:
             if field in summary['score_statistics']:
                 stats = summary['score_statistics'][field]
                 logger.info(f"  {field}: mean={stats['mean']:.1f}, median={stats['median']:.1f}, "

@@ -82,7 +82,7 @@ class JDParser:
         
         # Vector databases and search infrastructure
         "faiss", "pinecone", "milvus", "qdrant", "weaviate", "elasticsearch",
-        "opensearch", "annoy", "lsh", "hnsw", "pgvector", "pgvecor",
+        "opensearch", "annoy", "lsh", "hnsw", "pgvector",
         "vector database", "vector db", "embedding index", "similarity index",
         "ann index", "approximate nearest neighbor",
         

@@ -1,14 +1,17 @@
 import pandas as pd
 
-df = pd.read_parquet("outputs/candidate_features.parquet")
+raw = pd.read_parquet("outputs/candidate_features.parquet")
+norm = pd.read_parquet("outputs/normalized_candidate_features.parquet")
 
-print(df["skill_match_score"].describe())
+cid = raw.loc[raw["skill_match_score"].idxmax(), "candidate_id"]
 
-print(
-    df.sort_values(
-        "skill_match_score",
-        ascending=False
-    )[
-        ["candidate_id", "skill_match_score"]
-    ].head(20)
-)
+print("Candidate:", cid)
+
+print("RAW:",
+      raw.loc[raw["candidate_id"] == cid, "skill_match_score"].values[0])
+
+print("NORM:",
+      norm.loc[norm["candidate_id"] == cid, "skill_match_score"].values[0])
+
+print("EXPECTED:",
+      raw.loc[raw["candidate_id"] == cid, "skill_match_score"].values[0] / 100)

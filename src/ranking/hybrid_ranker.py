@@ -174,12 +174,7 @@ class HybridRanker:
         return df
 
     def show_top(self, df, k=10):
-
-        print()
-        print("=" * 80)
-        print("TOP CANDIDATES")
-        print("=" * 80)
-
+        # Debug/inspection helper. Prefer logging over prints for production safety.
         cols = [
             "rank",
             "candidate_id",
@@ -188,11 +183,11 @@ class HybridRanker:
             "semantic_similarity_score",
             "production_ml_score",
         ]
-
-        print(df[cols].head(k))
-
-        print()
-        print("=" * 80)
+        logger.info("=" * 80)
+        logger.info("TOP CANDIDATES")
+        logger.info("=" * 80)
+        logger.info(df[cols].head(k).to_string(index=False))
+        logger.info("=" * 80)
 
 
 def main():

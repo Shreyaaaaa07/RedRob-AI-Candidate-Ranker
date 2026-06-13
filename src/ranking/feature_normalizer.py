@@ -1,11 +1,10 @@
 """
 Feature Normalization Layer
 
-Converts all engineered features into a common 0-1 scale
-before they are consumed by the Hybrid Ranking Engine.
+Converts engineered features into a common 0-1 scale.
 
 Input:
-    outputs/candidate_features_with_semantic.parquet
+    outputs/candidate_features.parquet
 
 Output:
     outputs/normalized_candidate_features.parquet
@@ -59,58 +58,71 @@ class FeatureNormalizer:
 
         logger.info(f"Loaded {len(df)} candidates")
 
-        # Normalize every score column
         for col in self.FEATURE_COLUMNS:
 
             if col not in df.columns:
-                logger.warning(f"{col} not found. Skipping.")
+                logger.warning(f"{col} missing. Skipping.")
                 continue
 
-            df[col] = (
-                pd.to_numeric(df[col], errors="coerce")
-                .fillna(0)
-                .clip(0, 100)
-                / 100.0
+            vals = pd.to_numeric(
+                df[col],
+                errors="coerce"
+            ).fillna(0)
+
+            raw_max = vals.max()
+
+            # Already normalized
+            if raw_max <= 1.0:
+
+                normalized = vals
+
+            # Raw score out of 100
+            else:
+
+                normalized = vals / 100.0
+
+            df[col] = normalized.clip(
+                lower=0.0,
+                upper=1.0,
             )
 
-        # Keep risk_score as-is.
-        # 0 = Low Risk
-        # 1 = High Risk
-        # The HybridRanker will subtract it.
+            logger.info(
+                f"{col:35}"
+                f" raw_max={raw_max:.4f}"
+                f" normalized_max={df[col].max():.4f}"
+            )
 
         self.output_path.parent.mkdir(
             parents=True,
-            exist_ok=True
+            exist_ok=True,
         )
 
         df.to_parquet(
             self.output_path,
-            index=False
+            index=False,
         )
 
         logger.info(
-            f"Normalized features saved to {self.output_path}"
+            f"Saved normalized features -> {self.output_path}"
         )
 
         return df
 
     def validate(self, df):
 
-        print("\n========== NORMALIZATION REPORT ==========\n")
+        logger.info("Validation Report")
 
         for col in self.FEATURE_COLUMNS:
 
             if col not in df.columns:
                 continue
 
-            print(
+            logger.info(
                 f"{col:35}"
-                f"min={df[col].min():.3f}   "
-                f"max={df[col].max():.3f}   "
-                f"mean={df[col].mean():.3f}"
+                f" min={df[col].min():.4f}"
+                f" max={df[col].max():.4f}"
+                f" mean={df[col].mean():.4f}"
             )
-
-        print("\n==========================================\n")
 
 
 def main():
