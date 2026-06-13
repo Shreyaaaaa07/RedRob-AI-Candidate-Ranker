@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any, Optional, Set
 from dataclasses import dataclass, asdict, field
 from collections import defaultdict
+from src.features.semantic_similarity import SemanticSimilarityEngine
 import re
 from datetime import datetime, timedelta
 
@@ -36,6 +37,7 @@ class CandidateFeatureVector:
     
     # JD-Specific Matching Scores (0-100)
     experience_match_score: float = 0.0
+    semantic_similarity_score: float = 0.0
     skill_match_score: float = 0.0
     production_ml_score: float = 0.0
     retrieval_score: float = 0.0
@@ -121,78 +123,173 @@ class ScoringEngine:
     # ========== EXPERIENCE MATCHING ==========
     
     def score_experience_match(
-        self, candidate_years: float, career_history: List[Dict], 
+        self,
+        candidate_years: float,
+        career_history: List[Dict],
         evidence_list: List[str]
     ) -> float:
         """
-        Score experience match using smooth normalization.
-        
-        Not just comparing to JD years directly.
-        Consider career progression and stability.
+        Experience scoring with tolerance.
+
+        - Below JD minimum -> partial score
+        - Within JD range -> full score
+        - Above JD maximum -> slight decay only
         """
+
         if candidate_years <= 0:
             return 0.0
-        
-        # Ideal range: JD min to JD max
+
         jd_min = self.jd_experience_min
         jd_max = self.jd_experience_max
-        mid_point = (jd_min + jd_max) / 2
-        range_width = (jd_max - jd_min) / 2
-        
-        # Smooth bell curve (Gaussian-like)
-        distance_from_ideal = abs(candidate_years - mid_point)
-        sigma = range_width / 2  # Standard deviation
-        
-        if distance_from_ideal == 0:
+
+        # -----------------------------
+        # Below required experience
+        # -----------------------------
+        if candidate_years < jd_min:
+
+            score = max(
+                30.0,
+                (candidate_years / jd_min) * 100
+            )
+
+        # -----------------------------
+        # Inside ideal range
+        # -----------------------------
+        elif jd_min <= candidate_years <= jd_max:
+
             score = 100.0
+
+            evidence_list.append(
+                f"Experience {candidate_years:.1f}y matches JD ({jd_min}-{jd_max}y)"
+            )
+
+        # -----------------------------
+        # Above JD range
+        # -----------------------------
         else:
-            # Gaussian: exp(-distance^2 / (2 * sigma^2))
-            score = 100.0 * np.exp(-(distance_from_ideal ** 2) / (2 * sigma ** 2))
-        
-        if score > 90:
-            evidence_list.append(f"Experience {candidate_years:.1f}y matches JD range {jd_min}-{jd_max}y")
-        
-        return min(100.0, max(0.0, score))
+
+            extra = candidate_years - jd_max
+
+            # Lose only 2 points per extra year
+            score = max(
+                70.0,
+                100 - extra * 2
+            )
+
+            evidence_list.append(
+                f"Experience {candidate_years:.1f}y exceeds JD requirement"
+            )
+
+        return float(score)
     
     # ========== SKILL MATCHING ==========
     
     def score_skill_match(
-        self, candidate_skills: List[str], jd_must_have: List[str],
-        jd_preferred: List[str], evidence_list: List[str]
+        self,
+        candidate_skills: List[str],
+        jd_must_have: List[str],
+        jd_preferred: List[str],
+        evidence_list: List[str],
     ) -> float:
-        """Score how many JD required skills candidate has"""
-        
+        """
+        Score candidate skill overlap using
+        exact + substring + token matching.
+        """
+
         if not jd_must_have:
-            return 50.0  # Neutral if no requirements
-        
-        candidate_skills_lower = set(s.lower() for s in candidate_skills)
-        must_have_lower = set(s.lower() for s in jd_must_have)
-        preferred_lower = set(s.lower() for s in jd_preferred) if jd_preferred else set()
-        
-        # Check for exact matches (simple keyword matching)
-        must_have_matches = sum(1 for skill in must_have_lower if any(
-            skill in cs or cs in skill for cs in candidate_skills_lower
-        ))
-        
-        preferred_matches = sum(1 for skill in preferred_lower if any(
-            skill in cs or cs in skill for cs in candidate_skills_lower
-        ))
-        
-        # Score: 40% must-have, 60% for going beyond
-        if must_have_lower:
-            must_have_score = (must_have_matches / len(must_have_lower)) * 60
-        else:
-            must_have_score = 60
-        
-        # Bonus for preferred
-        preferred_bonus = min(40, (preferred_matches / max(1, len(preferred_lower))) * 40) if preferred_lower else 0
-        
-        score = must_have_score + preferred_bonus
-        
-        if must_have_matches > 0:
-            evidence_list.append(f"Has {must_have_matches}/{len(must_have_lower)} must-have skills")
-        
-        return min(100.0, max(0.0, score))
+            return 50.0
+
+        candidate_set = [
+            s.strip().lower()
+            for s in candidate_skills
+            if s and s.strip()
+        ]
+
+        must_have = [
+            s.strip().lower()
+            for s in jd_must_have
+            if s and s.strip()
+        ]
+
+        preferred = [
+            s.strip().lower()
+            for s in jd_preferred
+            if s and s.strip()
+        ]
+
+        matched_must = set()
+        matched_pref = set()
+
+        # ----------------------------
+        # Must-have matching
+        # ----------------------------
+        for jd_skill in must_have:
+
+            for cand_skill in candidate_set:
+
+                if (
+                    jd_skill == cand_skill
+                    or jd_skill in cand_skill
+                    or cand_skill in jd_skill
+                ):
+                    matched_must.add(jd_skill)
+                    break
+
+                # token overlap
+                jd_tokens = set(jd_skill.split())
+                cand_tokens = set(cand_skill.split())
+
+                if len(jd_tokens & cand_tokens) > 0:
+                    matched_must.add(jd_skill)
+                    break
+
+        # ----------------------------
+        # Preferred matching
+        # ----------------------------
+        for jd_skill in preferred:
+
+            for cand_skill in candidate_set:
+
+                if (
+                    jd_skill == cand_skill
+                    or jd_skill in cand_skill
+                    or cand_skill in jd_skill
+                ):
+                    matched_pref.add(jd_skill)
+                    break
+
+                jd_tokens = set(jd_skill.split())
+                cand_tokens = set(cand_skill.split())
+
+                if len(jd_tokens & cand_tokens) > 0:
+                    matched_pref.add(jd_skill)
+                    break
+
+        must_score = (
+            len(matched_must)
+            / max(len(must_have), 1)
+        ) * 80
+
+        pref_score = (
+            len(matched_pref)
+            / max(len(preferred), 1)
+        ) * 20
+
+        final = must_score + pref_score
+
+        if matched_must:
+            evidence_list.append(
+                "Matched must-have: "
+                + ", ".join(sorted(matched_must))
+            )
+
+        if matched_pref:
+            evidence_list.append(
+                "Matched preferred: "
+                + ", ".join(sorted(matched_pref))
+            )
+
+        return min(100.0, final)
     
     # ========== DOMAIN-SPECIFIC SCORING ==========
     
@@ -771,8 +868,20 @@ class CandidateFeatureEngine:
     
     def __init__(self, jd_features: Optional[Dict[str, Any]] = None):
         """Initialize with optional JD features"""
+
         self.scorer = ScoringEngine(jd_features)
         self.jd_features = jd_features or {}
+
+        # Initialize semantic engine
+        self.semantic_engine = SemanticSimilarityEngine()
+
+        # Build JD semantic text once
+        self.jd_text = self.semantic_engine.build_jd_text(self.jd_features)
+
+        # Pre-compute JD embedding once (reused for all candidates)
+        self.jd_embedding = self.semantic_engine.encode_jd(self.jd_text)
+
+        
     
     def process_candidate(
         self, candidate_id: str, candidate_data: Dict[str, Any]
@@ -790,6 +899,8 @@ class CandidateFeatureEngine:
         vector = CandidateFeatureVector()
         vector.candidate_id = candidate_id
         vector.processing_timestamp = datetime.now().isoformat()
+        # Initialize evidence storage
+        vector.evidence = defaultdict(list)
         
         # Extract key fields
         profile = candidate_data.get('profile', {})
@@ -801,9 +912,8 @@ class CandidateFeatureEngine:
         years_exp = profile.get('years_of_experience', 0) or 0
         profile_text = (profile.get('summary', '') or '') + " " + (profile.get('headline', '') or '')
         
-        # Initialize evidence storage
-        vector.evidence = defaultdict(list)
-        
+       
+                
         # ========== JD MATCHING SCORES ==========
         
         # Experience match
@@ -837,78 +947,36 @@ class CandidateFeatureEngine:
         candidate_skills = list(set([s.strip() for s in candidate_skills if s and s.strip()]))
         candidate_skills = sorted(candidate_skills)
 
-        # candidate skills is already prepared
-
-        if candidate_id == "CAND_0000024":
-            print("\n" + "="*80)
-            print("COMPREHENSIVE DEBUG - SKILL MATCHING")
-            print("="*80)
-            
-            print("\n1. CANDIDATE SKILLS EXTRACTION")
-            print(f"   Explicit skills from 'skills' field: {[s.get('name', '') for s in skills]}")
-            print(f"   From summary: {extract_atomic_skills(profile.get('summary', ''))}")
-            print(f"   From headline: {extract_atomic_skills(profile.get('headline', ''))}")
-            for i, job in enumerate(career_history[:3]):
-                desc_skills = extract_atomic_skills(job.get('description', ''))
-                print(f"   From job {i} ({job.get('title', 'Unknown')}): {desc_skills}")
-            
-            print(f"\n   FINAL Candidate Skills (deduplicated): {len(candidate_skills)} total")
-            for skill in sorted(candidate_skills):
-                print(f"      - {skill}")
-            
-            print(f"\n2. JD REQUIREMENTS")
-            print(f"   Must-have skills: {len(jd_must_have)} total")
-            for skill in sorted(jd_must_have):
-                print(f"      - {skill}")
-            
-            print(f"\n   Preferred skills: {len(jd_preferred)} total")
-            for skill in sorted(jd_preferred):
-                print(f"      - {skill}")
-            
-            print(f"\n3. SKILL MATCHING ANALYSIS")
-            candidate_skills_lower = set(s.lower() for s in candidate_skills)
-            must_have_lower = set(s.lower() for s in jd_must_have)
-            preferred_lower = set(s.lower() for s in jd_preferred) if jd_preferred else set()
-            
-            must_have_matches = sum(1 for skill in must_have_lower if any(
-                skill in cs or cs in skill for cs in candidate_skills_lower
-            ))
-            
-            preferred_matches = sum(1 for skill in preferred_lower if any(
-                skill in cs or cs in skill for cs in candidate_skills_lower
-            ))
-            
-            print(f"   Must-have matches: {must_have_matches}/{len(jd_must_have)}")
-            print(f"   Preferred matches: {preferred_matches}/{len(jd_preferred)}")
-            
-            # Calculate expected score
-            if must_have_lower:
-                must_have_score = (must_have_matches / len(must_have_lower)) * 60
-            else:
-                must_have_score = 60
-            
-            preferred_bonus = min(40, (preferred_matches / max(1, len(preferred_lower))) * 40) if preferred_lower else 0
-            expected_score = must_have_score + preferred_bonus
-            
-            print(f"\n   Score calculation:")
-            print(f"      must_have_score = ({must_have_matches}/{len(jd_must_have)}) * 60 = {must_have_score:.4f}")
-            print(f"      preferred_bonus = ({preferred_matches}/{max(1, len(jd_preferred))}) * 40 = {preferred_bonus:.4f}")
-            print(f"      EXPECTED TOTAL SCORE = {expected_score:.4f}")
-            
-            print(f"\n4. EXACT INTERSECTIONS")
-            exact_intersection = candidate_skills_lower & must_have_lower
-            print(f"   Must-have intersection: {exact_intersection}")
-            exact_pref_intersection = candidate_skills_lower & preferred_lower
-            print(f"   Preferred intersection: {exact_pref_intersection}")
-            
-            print("="*80 + "\n")
-
         vector.skill_match_score = self.scorer.score_skill_match(
             candidate_skills,
             jd_must_have,
             jd_preferred,
             vector.evidence["skill_match"]
         )
+
+        # =====================================================
+        # Semantic Similarity (using pre-computed JD embedding)
+        # =====================================================
+
+        try:
+            candidate_text = self.semantic_engine.build_candidate_text(candidate_data)
+
+            vector.semantic_similarity_score = (
+                self.semantic_engine.compute_similarity_with_jd_embedding(
+                    self.jd_embedding,
+                    candidate_text
+                )
+            )
+
+            vector.evidence["semantic_similarity"].append(
+                f"Semantic similarity: {vector.semantic_similarity_score:.2f}"
+            )
+
+        except Exception as e:
+            logger.warning(
+                f"Semantic similarity failed for {candidate_id}: {e}"
+            )
+            vector.semantic_similarity_score = 0.0
         
         # Production ML
         vector.production_ml_score = self.scorer.score_production_ml(
@@ -1014,40 +1082,70 @@ class CandidateFeatureEngine:
     ) -> List[CandidateFeatureVector]:
         """
         Process candidates in batches with progress tracking.
-        
+
         Args:
             candidates_iterator: Iterator yielding (id, data) tuples
             batch_size: Number of candidates per batch
-            
+
         Returns:
             List of feature vectors
         """
+
+        # =====================================================
+        # DEBUG MODE
+        # Set to None for full production run
+        # Example:
+        # DEBUG_LIMIT = 1000  -> processes only 1000 candidates
+        # DEBUG_LIMIT = None  -> processes all candidates
+        # =====================================================
+        DEBUG_LIMIT = None
+
         vectors = []
         batch = []
-        
+        processed = 0
+
         for candidate_id, candidate_data, error in tqdm(
             candidates_iterator,
             desc="Processing candidates",
             unit="candidate"
         ):
+
+            # Stop early in debug mode
+            if DEBUG_LIMIT is not None and processed >= DEBUG_LIMIT:
+                logger.info(f"DEBUG MODE: Stopped after {DEBUG_LIMIT} candidates")
+                break
+
+            processed += 1
+
             if error is None and candidate_data is not None:
                 try:
-                    vector = self.process_candidate(candidate_id, candidate_data)
+                    vector = self.process_candidate(
+                        candidate_id,
+                        candidate_data
+                    )
+
                     batch.append(vector)
-                    
+
                     if len(batch) >= batch_size:
                         vectors.extend(batch)
                         batch = []
+
                 except Exception as e:
-                    logger.warning(f"Error processing candidate {candidate_id}: {e}")
-        
+                    logger.exception(
+                        f"Error processing candidate {candidate_id}"
+                    )
+                    raise
+
         # Add remaining batch
         if batch:
             vectors.extend(batch)
-        
-        logger.info(f"Processed {len(vectors)} candidates successfully")
+
+        logger.info(
+            f"Processed {len(vectors)} candidates successfully"
+        )
+
         return vectors
-    
+        
     def save_to_parquet(self, vectors: List[CandidateFeatureVector], output_path: Path) -> None:
         """
         Save feature vectors to Parquet format.

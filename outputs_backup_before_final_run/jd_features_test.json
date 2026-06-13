@@ -1,0 +1,159 @@
+{
+  "role_title": "Senior AI Engineer \u2014 Founding Team",
+  "company_name": "Redrob AI (Series A AI-native talent intelligence platform)",
+  "location": "Pune/Noida, India (Hybrid \u2014 flexible cadence) | Open to relocation candidates from Tier-1 Indian cities",
+  "employment_type": "Full-time",
+  "required_experience_min": 5,
+  "required_experience_max": 9,
+  "experience_notes": "what we mean by this\" below)",
+  "must_have_skills": [
+    "a/b test",
+    "bge",
+    "e5",
+    "elasticsearch",
+    "embeddings",
+    "evaluation",
+    "faiss",
+    "hybrid search",
+    "map",
+    "milvus",
+    "mrr",
+    "ndcg",
+    "openai",
+    "openai embeddings",
+    "opensearch",
+    "pinecone",
+    "production",
+    "python",
+    "qdrant",
+    "ranking system",
+    "retrieval",
+    "retrieval quality",
+    "transformers",
+    "weaviate"
+  ],
+  "preferred_skills": [
+    "evaluation",
+    "llm",
+    "recommendation system",
+    "retrieval"
+  ],
+  "explicitly_unwanted_skills": [
+    "evaluation",
+    "github",
+    "langchain",
+    "llm",
+    "open source",
+    "pinecone",
+    "rag",
+    "ranking system",
+    "recommendation system",
+    "retrieval"
+  ],
+  "required_domains": [
+    "ranking",
+    "llm",
+    "ml/ai",
+    "embeddings",
+    "matching",
+    "recommendation",
+    "retrieval",
+    "search"
+  ],
+  "required_tools": [
+    "opensearch",
+    "pinecone",
+    "weaviate",
+    "faiss",
+    "qdrant",
+    "milvus",
+    "elasticsearch"
+  ],
+  "required_frameworks": [
+    "openai",
+    "langchain",
+    "transformers"
+  ],
+  "required_soft_skills": [
+    "communication",
+    "product thinking",
+    "ownership",
+    "execution",
+    "decision making"
+  ],
+  "required_responsibilities": [
+    "actually be doing",
+    "in practical terms, your first 90 days will probably look like:",
+    "weeks 1-3: audit what we currently have (it's mostly bm25 + rule-based scoring, working but not great). identify the 3-4 highest-leverage things to fix.",
+    "weeks 9-12: set up the evaluation infrastructure \u2014 offline benchmarks, online a/b testing, recruiter-feedback loops \u2014 so we can keep improving without flying blind."
+  ],
+  "evaluation_keywords": [
+    "a/b test",
+    "a/b testing",
+    "dcg",
+    "eval framework",
+    "evaluation framework",
+    "map",
+    "mrr",
+    "ndcg",
+    "offline benchmark"
+  ],
+  "production_keywords": [
+    "deployed",
+    "in production",
+    "inference",
+    "production",
+    "production deployment",
+    "real users",
+    "scale",
+    "shipped"
+  ],
+  "retrieval_keywords": [
+    "hybrid search",
+    "matching",
+    "ranker",
+    "ranking system",
+    "recommendation",
+    "retrieval",
+    "retrieval system"
+  ],
+  "vector_database_keywords": [
+    "elasticsearch",
+    "faiss",
+    "milvus",
+    "opensearch",
+    "pinecone",
+    "qdrant",
+    "vector database",
+    "weaviate"
+  ],
+  "ranking_keywords": [
+    "rank",
+    "ranker",
+    "ranking",
+    "ranking system",
+    "scoring",
+    "xgboost"
+  ],
+  "startup_keywords": [
+    "early",
+    "founding",
+    "shipped",
+    "startup"
+  ],
+  "open_source_keywords": [
+    "git",
+    "github",
+    "open-source",
+    "pr"
+  ],
+  "anti_patterns": {
+    "pure_research": "Pure research background without production deployment",
+    "langchain_only": "Recent (< 12 months) LangChain/OpenAI experience without pre-LLM ML",
+    "no_recent_coding": "No production coding in 18+ months (moved to architecture/management)",
+    "title_chaser": "Career path suggests title-optimization rather than growth",
+    "framework_only": "Focus on framework tutorials rather than systems thinking"
+  },
+  "parse_timestamp": "",
+  "confidence_score": 1.0
+}

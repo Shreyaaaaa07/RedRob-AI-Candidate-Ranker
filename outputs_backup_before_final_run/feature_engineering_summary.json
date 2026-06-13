@@ -1,0 +1,147 @@
+{
+  "processing_timestamp": "2026-06-13T16:45:31.728191",
+  "jd": {
+    "title": "Senior AI Engineer \u2014 Founding Team",
+    "experience_range": "5-9y",
+    "must_have_skills_count": 12,
+    "preferred_skills_count": 15
+  },
+  "candidates_processed": 1000,
+  "score_statistics": {
+    "experience_match_score": {
+      "mean": 84.2522,
+      "median": 95.0,
+      "min": 30.0,
+      "max": 100.0,
+      "std": 21.727272151837195
+    },
+    "skill_match_score": {
+      "mean": 13.776,
+      "median": 7.999999999999999,
+      "min": 0.0,
+      "max": 66.66666666666667,
+      "std": 12.234143551734402
+    },
+    "production_ml_score": {
+      "mean": 67.22,
+      "median": 70.0,
+      "min": 30.0,
+      "max": 90.0,
+      "std": 21.29956807073796
+    },
+    "retrieval_score": {
+      "mean": 11.24,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 100.0,
+      "std": 21.383694722848993
+    },
+    "vector_database_score": {
+      "mean": 3.81,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 70.0,
+      "std": 15.842471398112101
+    },
+    "ranking_system_score": {
+      "mean": 14.1,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 85.0,
+      "std": 26.423285185608545
+    },
+    "evaluation_framework_score": {
+      "mean": 17.09,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 90.0,
+      "std": 30.604442487978766
+    },
+    "startup_fit_score": {
+      "mean": 1.95,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 50.0,
+      "std": 9.679746897517514
+    },
+    "open_source_score": {
+      "mean": 21.22,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 100.0,
+      "std": 24.472670471364587
+    },
+    "education_score": {
+      "mean": 55.07,
+      "median": 50.0,
+      "min": 30.0,
+      "max": 100.0,
+      "std": 22.261965322046482
+    },
+    "career_stability_score": {
+      "mean": 60.24,
+      "median": 65.0,
+      "min": 35.0,
+      "max": 85.0,
+      "std": 9.87635560315646
+    },
+    "experience_consistency_score": {
+      "mean": 90.0,
+      "median": 90.0,
+      "min": 90.0,
+      "max": 90.0,
+      "std": 0.0
+    },
+    "recruiter_interest_score": {
+      "mean": 13.68,
+      "median": 20.0,
+      "min": 0.0,
+      "max": 40.0,
+      "std": 10.43348455694453
+    },
+    "activity_score": {
+      "mean": 49.025,
+      "median": 45.0,
+      "min": 0.0,
+      "max": 100.0,
+      "std": 21.345359565957185
+    },
+    "engagement_score": {
+      "mean": 22.975,
+      "median": 20.0,
+      "min": 5.0,
+      "max": 75.0,
+      "std": 16.02106035816606
+    },
+    "availability_score": {
+      "mean": 47.205,
+      "median": 45.0,
+      "min": 25.0,
+      "max": 100.0,
+      "std": 19.021382047580037
+    },
+    "behavior_score": {
+      "mean": 24.144426666666668,
+      "median": 23.451666666666668,
+      "min": 1.7033333333333334,
+      "max": 58.46666666666667,
+      "std": 9.02580470676284
+    },
+    "risk_score": {
+      "mean": 2.375,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 35.0,
+      "std": 6.106093268203492
+    }
+  },
+  "risk_analysis": {
+    "total_flags": 190,
+    "candidates_with_risk": 178,
+    "flag_breakdown": {
+      "Very incomplete profile": 69,
+      "No recruiter engagement signal": 67,
+      "LangChain-only experience detected": 54
+    }
+  }
+}

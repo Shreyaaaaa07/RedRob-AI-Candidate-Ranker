@@ -1,3 +1,4 @@
+
 """
 Hybrid Ranking Engine
 
@@ -20,44 +21,65 @@ logger = logging.getLogger(__name__)
 
 class HybridRanker:
 
+    # ==========================================================
+    # Production Weight Configuration
+    # Total Weight = 1.00
+    # ==========================================================
     WEIGHTS = {
 
-        "skill_match_score": 0.20,
+        # ------------------------------------------------------
+        # Core Matching (62%)
+        # ------------------------------------------------------
+        "skill_match_score": 0.22,
+        "semantic_similarity_score": 0.10,
+        "production_ml_score": 0.18,
+        "experience_match_score": 0.12,
 
-        "production_ml_score": 0.20,
-
-        "experience_match_score": 0.15,
-
-        "career_stability_score": 0.10,
-
-        "retrieval_score": 0.10,
-
+        # ------------------------------------------------------
+        # Retrieval / Search Expertise (23%)
+        # ------------------------------------------------------
+        "retrieval_score": 0.08,
         "vector_database_score": 0.05,
-
         "ranking_system_score": 0.05,
-
         "evaluation_framework_score": 0.05,
 
-        "startup_fit_score": 0.03,
+        # ------------------------------------------------------
+        # Career Quality (8%)
+        # ------------------------------------------------------
+        "career_stability_score": 0.05,
+        "experience_consistency_score": 0.03,
 
+        # ------------------------------------------------------
+        # Startup / OSS (4%)
+        # ------------------------------------------------------
+        "startup_fit_score": 0.02,
         "open_source_score": 0.02,
 
+        # ------------------------------------------------------
+        # Education / Recruiter Signals (3%)
+        # ------------------------------------------------------
         "education_score": 0.02,
-
         "recruiter_interest_score": 0.01,
 
+        # ------------------------------------------------------
+        # Activity Signals (3%)
+        # ------------------------------------------------------
         "activity_score": 0.01,
-
         "engagement_score": 0.01,
+        "availability_score": 0.01,
 
-        "availability_score": 0.03,
-
-        "behavior_score": 0.02,
-
-        "experience_consistency_score": 0.02,
+        # ------------------------------------------------------
+        # Behaviour (1%)
+        # ------------------------------------------------------
+        "behavior_score": 0.01,
     }
 
-    RISK_WEIGHT = 0.10
+    # Risk penalty
+    RISK_WEIGHT = 0.05
+
+    # Skill gate thresholds
+    SOFT_SKILL_THRESHOLD = 0.15
+    HARD_SKILL_THRESHOLD = 0.10
 
     def __init__(
         self,
@@ -74,8 +96,11 @@ class HybridRanker:
 
         df = pd.read_parquet(self.input_path)
 
-        score = 0.0
+        score = pd.Series(0.0, index=df.index)
 
+        # ======================================================
+        # Weighted Feature Aggregation
+        # ======================================================
         for feature, weight in self.WEIGHTS.items():
 
             if feature not in df.columns:
@@ -84,17 +109,43 @@ class HybridRanker:
 
             score += df[feature] * weight
 
-        # Penalize risk
+        # ======================================================
+        # Skill Gate
+        #
+        # Prevent candidates with extremely poor skill overlap
+        # from reaching the top purely due to semantic similarity.
+        # ======================================================
+
+        if "skill_match_score" in df.columns:
+
+            # Hard penalty (<10%)
+            hard_mask = df["skill_match_score"] < self.HARD_SKILL_THRESHOLD
+            score.loc[hard_mask] *= 0.70
+
+            # Soft penalty (10%-15%)
+            soft_mask = (
+                (df["skill_match_score"] >= self.HARD_SKILL_THRESHOLD)
+                &
+                (df["skill_match_score"] < self.SOFT_SKILL_THRESHOLD)
+            )
+
+            score.loc[soft_mask] *= 0.85
+
+        # ======================================================
+        # Risk Penalty
+        # ======================================================
 
         if "risk_score" in df.columns:
+            score -= df["risk_score"] * self.RISK_WEIGHT
 
-            score += df["risk_score"] * self.RISK_WEIGHT
+        # Prevent negative scores
+        score = score.clip(lower=0)
 
-        df["hybrid_score"] = score
+        df["hybrid_score"] = score * 100
 
-        # Scale to 0-100
-
-        df["hybrid_score"] = df["hybrid_score"] * 100
+        # ======================================================
+        # Ranking
+        # ======================================================
 
         df.sort_values(
             by="hybrid_score",
@@ -125,23 +176,22 @@ class HybridRanker:
     def show_top(self, df, k=10):
 
         print()
-
         print("=" * 80)
-
         print("TOP CANDIDATES")
-
         print("=" * 80)
 
         cols = [
             "rank",
             "candidate_id",
             "hybrid_score",
+            "skill_match_score",
+            "semantic_similarity_score",
+            "production_ml_score",
         ]
 
         print(df[cols].head(k))
 
         print()
-
         print("=" * 80)
 
 
@@ -158,3 +208,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

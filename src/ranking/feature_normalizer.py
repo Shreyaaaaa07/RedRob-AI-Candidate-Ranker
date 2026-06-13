@@ -5,7 +5,7 @@ Converts all engineered features into a common 0-1 scale
 before they are consumed by the Hybrid Ranking Engine.
 
 Input:
-    outputs/candidate_features.parquet
+    outputs/candidate_features_with_semantic.parquet
 
 Output:
     outputs/normalized_candidate_features.parquet
@@ -26,6 +26,7 @@ class FeatureNormalizer:
         "skill_match_score",
         "production_ml_score",
         "retrieval_score",
+        "semantic_similarity_score",
         "vector_database_score",
         "ranking_system_score",
         "evaluation_framework_score",

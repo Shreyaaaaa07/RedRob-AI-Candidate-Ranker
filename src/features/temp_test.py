@@ -1,8 +1,14 @@
 import pandas as pd
 
-df = pd.read_parquet("outputs/normalized_candidate_features.parquet")
+df = pd.read_parquet("outputs/candidate_features.parquet")
 
 print(df["skill_match_score"].describe())
 
-print("\nTop 20 Skill Match Scores:")
-print(df["skill_match_score"].sort_values(ascending=False).head(20))
+print(
+    df.sort_values(
+        "skill_match_score",
+        ascending=False
+    )[
+        ["candidate_id", "skill_match_score"]
+    ].head(20)
+)

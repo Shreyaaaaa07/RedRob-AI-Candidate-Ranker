@@ -275,8 +275,10 @@ class JDParser:
         
         # Extract skills
         self._extract_skills(text_lower)
-        
-        # Extract domains, tools, frameworks
+
+        # NEW
+        self._cleanup_skill_lists()
+
         self._extract_technical_details(text_lower)
         
         # Extract soft skills
@@ -621,6 +623,69 @@ class JDParser:
             logger.info(f"Saved JD features to {filepath}")
         
         return json_str
+    
+    def _cleanup_skill_lists(self):
+        """
+        Clean must-have/preferred/unwanted skill lists.
+        """
+
+        must = set(self.features.must_have_skills)
+        preferred = set(self.features.preferred_skills)
+        unwanted = set(self.features.explicitly_unwanted_skills)
+
+        # --------------------------------
+        # Remove duplicates
+        # --------------------------------
+        preferred -= must
+        unwanted -= must
+        unwanted -= preferred
+
+        # --------------------------------
+        # Move alternative technologies
+        # --------------------------------
+
+        move_to_preferred = {
+            "bge",
+            "e5",
+            "openai embeddings",
+            "map",
+            "mrr",
+            "ndcg",
+            "milvus",
+            "weaviate",
+            "opensearch",
+            "elasticsearch",
+        }
+
+        for skill in list(must):
+            if skill in move_to_preferred:
+                must.remove(skill)
+                preferred.add(skill)
+
+        # --------------------------------
+        # Collapse vector databases
+        # --------------------------------
+
+        vector_dbs = {
+            "faiss",
+            "pinecone",
+            "qdrant",
+            "milvus",
+            "weaviate",
+            "elasticsearch",
+            "opensearch",
+        }
+
+        found = must & vector_dbs
+
+        if found:
+            must -= vector_dbs
+            must.add("vector database")
+            preferred |= found
+
+        self.features.must_have_skills = sorted(must)
+        self.features.preferred_skills = sorted(preferred)
+        self.features.explicitly_unwanted_skills = sorted(unwanted)
 
 
 def parse_jd_file(jd_path: Path, output_path: Optional[Path] = None) -> JDFeatures:
@@ -664,3 +729,5 @@ if __name__ == "__main__":
         print(f"  Anti-patterns detected: {list(features.anti_patterns.keys())}")
     else:
         print(f"JD file not found: {jd_path}")
+
+    

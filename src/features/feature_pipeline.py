@@ -192,6 +192,10 @@ class FeatureEngineeringPipeline:
         
         for field in score_fields:
             scores = [getattr(v, field) for v in vectors]
+            if len(scores) == 0:
+                print(f"DEBUG: No scores found for {field}")
+                continue
+                        
             summary['score_statistics'][field] = {
                 'mean': float(np.mean(scores)),
                 'median': float(np.median(scores)),
