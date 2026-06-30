@@ -1,12 +1,17 @@
-from pathlib import Path
+from app.config import OUTPUT_DIR
 import pandas as pd
+
+
+class DashboardService:
+
+    def __init__(self):
+        self.output_dir = OUTPUT_DIR
 
 
 class RankingService:
 
     def __init__(self):
-        BASE_DIR = Path(__file__).resolve().parents[3]
-        self.output_dir = BASE_DIR / "outputs"
+        self.output_dir = OUTPUT_DIR
 
     def get_rankings(self):
 

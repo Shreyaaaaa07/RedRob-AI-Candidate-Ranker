@@ -1,13 +1,14 @@
-from pathlib import Path
-import json
+from app.config import OUTPUT_DIR
 import pandas as pd
+
+
+
 
 
 class CandidateService:
 
     def __init__(self):
-        BASE_DIR = Path(__file__).resolve().parents[3]
-        self.output_dir = BASE_DIR / "outputs"
+       self.output_dir = OUTPUT_DIR
 
     def get_candidate(self, candidate_id: str):
 

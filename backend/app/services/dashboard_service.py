@@ -1,14 +1,14 @@
-from pathlib import Path
-import json
+from app.config import OUTPUT_DIR
 import pandas as pd
 
 
 class DashboardService:
 
     def __init__(self):
-        self.output_dir = Path("outputs")
+        self.output_dir = OUTPUT_DIR
 
     def get_dashboard_stats(self):
+
         stats = {
             "total_candidates": 0,
             "processed_candidates": 0,
@@ -18,7 +18,8 @@ class DashboardService:
         }
 
         try:
-            parquet_file = self.output_dir / "candidate_features.parquet"
+
+            parquet_file = self.output_dir / "ranked_candidates.parquet"
 
             if parquet_file.exists():
 
@@ -28,17 +29,20 @@ class DashboardService:
                 stats["processed_candidates"] = len(df)
 
                 if "risk_score" in df.columns:
-                    stats["risk_flagged_candidates"] = (
-                        df["risk_score"] > 0
-                    ).sum()
+                    stats["risk_flagged_candidates"] = int(
+                        (df["risk_score"] > 0).sum()
+                    )
 
                 if "hybrid_score" in df.columns:
+
                     stats["average_match_score"] = round(
-                        float(df["hybrid_score"].mean()), 2
+                        float(df["hybrid_score"].mean()),
+                        2,
                     )
 
                     stats["top_candidate_score"] = round(
-                        float(df["hybrid_score"].max()), 2
+                        float(df["hybrid_score"].max()),
+                        2,
                     )
 
         except Exception as e:
