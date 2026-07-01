@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
+from app.services.job_description_service import JobDescriptionService
 
 router = APIRouter(
     prefix="/job-description",
@@ -18,20 +19,18 @@ def upload_job_description(request: JobDescriptionRequest):
     Later this will call the JD parser.
     """
 
+    service = JobDescriptionService()
+
+    parsed = service.parse(request.text)
+
     return {
+
         "status": "success",
-        "message": "Job Description received",
-        "text": request.text,
-        "parsed_signals": {
-            "skills": [
-                "Python",
-                "Machine Learning",
-                "LLMs",
-                "Vector Database"
-            ],
-            "experience": "5+ years",
-            "education": "Bachelor's Degree"
-        }
+
+        "message": "Job Description Parsed",
+
+        "parsed_signals": parsed
+
     }
 
 
