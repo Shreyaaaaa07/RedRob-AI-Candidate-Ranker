@@ -23,7 +23,7 @@
 
 **Live Application**
 
-https://red-rob-ai-candidate-git-e34d08-sharmashreya7676-2648s-projects.vercel.app
+https://red-rob-ai-candidate-ranker.vercel.app/
 
 ---
 
