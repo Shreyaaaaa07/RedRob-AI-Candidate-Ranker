@@ -170,6 +170,8 @@ venv/
 
 # Outputs
 outputs/
+!outputs/
+!outputs/ranked_candidates.parquet
 
 # ==========================
 # Frontend (React/Vite)
