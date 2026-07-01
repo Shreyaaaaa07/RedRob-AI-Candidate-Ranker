@@ -681,31 +681,27 @@ FastAPI Swagger
 
 ## 🏠 Recruiter Dashboard
 
-> Add Dashboard Screenshot Here
+![image alt](https://github.com/Shreyaaaaa07/RedRob-AI-Candidate-Ranker/blob/b71d619e8cb25569293784f4d36a15ff32eebc3b/Screenshot%202026-07-01%20212256.png)
 
 ---
 
 ## 📊 Candidate Rankings
 
-> Add Candidate Ranking Screenshot Here
+![image alt](https://github.com/Shreyaaaaa07/RedRob-AI-Candidate-Ranker/blob/b71d619e8cb25569293784f4d36a15ff32eebc3b/Screenshot%202026-07-01%20212409.png)
 
 ---
 
 ## 👤 Candidate Details
 
-> Add Candidate Details Screenshot Here
+![image alt](https://github.com/Shreyaaaaa07/RedRob-AI-Candidate-Ranker/blob/b71d619e8cb25569293784f4d36a15ff32eebc3b/Screenshot%202026-07-01%20212354.png)
 
 ---
 
 ## 📈 Analytics Dashboard
 
-> Add Analytics Screenshot Here
-
+![image alt](https://github.com/Shreyaaaaa07/RedRob-AI-Candidate-Ranker/blob/b71d619e8cb25569293784f4d36a15ff32eebc3b/Screenshot%202026-07-01%20212446.png)
 ---
 
-## 🔍 Candidate Comparison
-
-> Add Candidate Comparison Screenshot Here
 
 # 👥 Team Contributions
 
