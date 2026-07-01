@@ -7,6 +7,7 @@ import ErrorState from '../components/ui/ErrorState'
 import EmptyState from '../components/ui/EmptyState'
 import EvidencePanel from '../components/evidence/EvidencePanel'
 import useCandidateDetails from '../hooks/useCandidateDetails'
+import ScoreCard from "../components/ui/ScoreCard";
 
 export default function CandidateDetailsPage() {
   const { candidateId } = useParams()
@@ -78,6 +79,61 @@ const evidence =
         ? JSON.parse(candidate.evidence)
         : (candidate.evidence || {})
 
+let recommendation = "Needs Further Review";
+let confidence = 70;
+const strengths = [];
+const concerns = [];
+
+if (candidate.experience_match_score >= 0.8) {
+  strengths.push("Excellent experience match");
+}
+
+if (candidate.semantic_similarity_score >= 0.7) {
+  strengths.push("Strong semantic alignment");
+} else {
+  concerns.push("Moderate semantic alignment");
+}
+
+if (candidate.retrieval_score >= 0.8) {
+  strengths.push("Excellent retrieval expertise");
+}
+
+if (candidate.ranking_system_score >= 0.8) {
+  strengths.push("Strong ranking system experience");
+}
+
+if (candidate.production_ml_score >= 0.7) {
+  strengths.push("Production ML experience");
+}
+
+if (candidate.vector_database_score < 0.5) {
+  concerns.push("Limited vector database experience");
+}
+
+if (candidate.startup_fit_score < 0.6) {
+  concerns.push("Moderate startup fit");
+}
+
+if (candidate.risk_score === 0) {
+  strengths.push("No risk flags detected");
+}
+
+if (
+  candidate.hybrid_score >= 70 &&
+  candidate.risk_score === 0
+) {
+  recommendation = "Proceed to Technical Interview";
+  confidence = 95;
+}
+else if (candidate.hybrid_score >= 55) {
+  recommendation = "Proceed to Recruiter Screening";
+  confidence = 82;
+}
+else {
+  recommendation = "Keep as Backup Candidate";
+  confidence = 65;
+}
+
   return (
     <div className="space-y-6">
       <div>
@@ -96,75 +152,58 @@ const evidence =
               </div>
               <div className="flex items-center gap-2">
                 {riskCount > 0 ? <Badge variant="danger">{riskCount} risk flags</Badge> : <Badge variant="success">No risks</Badge>}
-                <Badge variant="primary">Score: {score ?? '—'}</Badge>
+                <Badge variant="primary"> Score: {candidate.hybrid_score?.toFixed(2) ?? '—'}</Badge>
               </div>
             </div>
 
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <div className="text-xs text-zinc-500">JD match</div>
-                <div className="mt-1 text-sm font-semibold text-zinc-900">{match ?? '—'}</div>
-              </div>
-              <div>
-                <div className="text-xs text-zinc-500">Experience</div>
-                <div className="mt-1 text-sm font-semibold text-zinc-900">{candidate.years_of_experience ?? candidate.profile?.years_of_experience ?? '—'}</div>
-              </div>
-            </div>
+            <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-5">
 
-            <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <div className="text-sm font-semibold text-zinc-900">Recruiter summary</div>
-              <div className="mt-1 text-sm text-zinc-600">
-                {candidate.summary ?? candidate.recruiter_summary ?? 'Review evidence to understand why this candidate ranks highly/lowly.'}
-              </div>
-            </div>
-          </Card>
+              <div className="rounded-xl border bg-white p-4">
+                <div className="text-xs text-zinc-500">
+                  Rank
+                </div>
 
-          <Card className="p-5">
-
-            <div className="text-lg font-semibold text-zinc-900">
-              AI Feature Scores
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-4">
-
-              <div className="rounded-lg border p-3">
-                <div className="text-xs text-zinc-500">Hybrid Score</div>
-                <div className="text-xl font-bold">
-                  {candidate.hybrid_score?.toFixed(2)}
+                <div className="mt-2 text-2xl font-bold">
+                  #{candidate.rank}
                 </div>
               </div>
 
-              <div className="rounded-lg border p-3">
-                <div className="text-xs text-zinc-500">Experience Match</div>
-                <div className="text-xl font-bold">
-                  {(candidate.experience_match_score * 100).toFixed(0)}%
+              <div className="rounded-xl border bg-white p-4">
+                <div className="text-xs text-zinc-500">
+                  Hybrid Score
+                </div>
+
+                <div className="mt-2 text-2xl font-bold text-blue-600">
+                  {candidate.hybrid_score.toFixed(2)}
                 </div>
               </div>
 
-              <div className="rounded-lg border p-3">
-                <div className="text-xs text-zinc-500">Skill Match</div>
-                <div className="text-xl font-bold">
-                  {(candidate.skill_match_score * 100).toFixed(0)}%
+              <div className="rounded-xl border bg-white p-4">
+                <div className="text-xs text-zinc-500">
+                  Semantic Match
                 </div>
-              </div>
 
-              <div className="rounded-lg border p-3">
-                <div className="text-xs text-zinc-500">Semantic Similarity</div>
-                <div className="text-xl font-bold">
+                <div className="mt-2 text-2xl font-bold">
                   {(candidate.semantic_similarity_score * 100).toFixed(0)}%
                 </div>
               </div>
 
-              <div className="rounded-lg border p-3">
-                <div className="text-xs text-zinc-500">Production ML</div>
-                <div className="text-xl font-bold">
-                  {(candidate.production_ml_score * 100).toFixed(0)}%
+              <div className="rounded-xl border bg-white p-4">
+                <div className="text-xs text-zinc-500">
+                  Experience Match
+                </div>
+
+                <div className="mt-2 text-2xl font-bold">
+                  {(candidate.experience_match_score * 100).toFixed(0)}%
                 </div>
               </div>
 
-              <div className="rounded-lg border p-3">
-                <div className="text-xs text-zinc-500">Risk Score</div>
-                <div className="text-xl font-bold text-red-600">
+              <div className="rounded-xl border bg-white p-4">
+                <div className="text-xs text-zinc-500">
+                  Risk Score
+                </div>
+
+                <div className="mt-2 text-2xl font-bold text-red-600">
                   {candidate.risk_score}
                 </div>
               </div>
@@ -172,9 +211,204 @@ const evidence =
             </div>
 
           </Card>
-        </div>
 
-        <div className="space-y-4">
+          <Card className="p-5">
+
+            <div className="text-lg font-semibold text-zinc-900">
+              Technical Evaluation
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-4">
+
+              <ScoreCard
+                title="Experience Match"
+                score={candidate.experience_match_score}
+              />
+
+              <ScoreCard
+                title="Skill Match"
+                score={candidate.skill_match_score}
+              />
+
+              <ScoreCard
+                title="Semantic Similarity"
+                score={candidate.semantic_similarity_score}
+              />
+
+              <ScoreCard
+                title="Production ML"
+                score={candidate.production_ml_score}
+              />
+
+              <ScoreCard
+                title="Retrieval"
+                score={candidate.retrieval_score}
+              />
+
+              <ScoreCard
+                title="Vector Database"
+                score={candidate.vector_database_score}
+              />
+
+              <ScoreCard
+                title="Ranking Systems"
+                score={candidate.ranking_system_score}
+              />
+
+              <ScoreCard
+                title="Evaluation Framework"
+                score={candidate.evaluation_framework_score}
+              />
+
+            </div>
+
+          </Card>
+
+          <Card className="p-5">
+
+            <div className="text-lg font-semibold text-zinc-900">
+              Behavior & Career Evaluation
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-4">
+
+              <ScoreCard
+                title="Activity"
+                score={candidate.activity_score}
+              />
+
+              <ScoreCard
+                title="Engagement"
+                score={candidate.engagement_score}
+              />
+
+              <ScoreCard
+                title="Availability"
+                score={candidate.availability_score}
+              />
+
+              <ScoreCard
+                title="Recruiter Interest"
+                score={candidate.recruiter_interest_score}
+              />
+
+              <ScoreCard
+                title="Career Stability"
+                score={candidate.career_stability_score}
+              />
+
+              <ScoreCard
+                title="Experience Consistency"
+                score={candidate.experience_consistency_score}
+              />
+
+              <ScoreCard
+                title="Education"
+                score={candidate.education_score}
+              />
+
+              <ScoreCard
+                title="Startup Fit"
+                score={candidate.startup_fit_score}
+              />
+
+            </div>
+
+          </Card>
+
+          </div>
+
+          <div className="space-y-4">
+
+            <Card className="p-5">
+
+              <div className="flex items-center justify-between">
+
+                <h2 className="text-lg font-semibold text-zinc-900">
+                  🤖 AI Recruiter Recommendation
+                </h2>
+
+                <Badge variant="primary">
+                  {confidence}% Confidence
+                </Badge>
+
+              </div>
+
+              <div className="mt-5">
+
+                <div className="text-sm text-zinc-500">
+                  Recommendation
+                </div>
+
+                <div className="mt-1 text-2xl font-bold text-green-600">
+                  {recommendation}
+                </div>
+
+              </div>
+
+              <div className="mt-6">
+
+                <h3 className="font-semibold text-zinc-900">
+                  Strengths
+                </h3>
+
+                <ul className="mt-2 space-y-2">
+
+                  {strengths.map((item, index) => (
+
+                    <li
+                      key={index}
+                      className="flex items-center gap-2 text-sm text-zinc-700"
+                    >
+                      <span className="text-green-600">✔</span>
+
+                      {item}
+
+                    </li>
+
+                  ))}
+
+                </ul>
+
+              </div>
+
+              <div className="mt-6">
+
+                <h3 className="font-semibold text-zinc-900">
+                  Concerns
+                </h3>
+
+                <ul className="mt-2 space-y-2">
+
+                  {concerns.length === 0 ? (
+
+                    <li className="text-sm text-zinc-500">
+                      No significant concerns detected.
+                    </li>
+
+                  ) : (
+
+                    concerns.map((item, index) => (
+
+                      <li
+                        key={index}
+                        className="flex items-center gap-2 text-sm text-zinc-700"
+                      >
+                        <span className="text-yellow-500">⚠</span>
+
+                        {item}
+
+                      </li>
+
+                    ))
+
+                  )}
+
+                </ul>
+
+              </div>
+
+            </Card>
           <Card className="p-5">
             <div className="flex items-center justify-between gap-3">
               <div>

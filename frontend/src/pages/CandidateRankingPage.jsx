@@ -24,6 +24,8 @@ export default function CandidateRankingPage() {
     const { data, error, loading, page, setPage, pageSize, search, setSearch, sort, setSort, jobId, setJobId } =
       useCandidateRanking()
 
+    const [riskFilter, setRiskFilter] = React.useState("all");
+
     const rows = useMemo(() => {
       if (!data) return []
 
@@ -33,15 +35,166 @@ export default function CandidateRankingPage() {
       return data.candidates ?? data.results ?? []
   }, [data])
 
-  const total = rows.length
+  
+  
+  const filteredRows = useMemo(() => {
 
+    return rows.filter((candidate) => {
+
+      const id =
+        candidate.candidate_id ??
+        candidate.id ??
+        candidate.candidateId ??
+        "";
+
+      const matchesSearch =
+        !search ||
+        id.toLowerCase().includes(search.toLowerCase());
+
+      const risks =
+        candidate.risk_flags
+          ? (
+              typeof candidate.risk_flags === "string"
+                ? JSON.parse(candidate.risk_flags || "[]")
+                : candidate.risk_flags
+            )
+          : [];
+
+      const matchesRisk =
+        riskFilter === "all" ||
+        (riskFilter === "safe" && risks.length === 0) ||
+        (riskFilter === "flagged" && risks.length > 0);
+
+      return matchesSearch && matchesRisk;
+
+    });
+
+  }, [rows, search, riskFilter]);
+
+  const total = filteredRows.length;
+
+  const safeCandidates = filteredRows.filter((c) => {
+  const risks =
+    c.risk_flags
+      ? (
+          typeof c.risk_flags === "string"
+            ? JSON.parse(c.risk_flags || "[]")
+            : c.risk_flags
+        )
+      : [];
+
+  return risks.length === 0;
+}).length;
+
+const riskCandidates = total - safeCandidates;
+
+const averageScore =
+  total > 0
+    ? (
+        filteredRows.reduce(
+          (sum, c) =>
+            sum +
+            Number(
+              c.hybrid_score ??
+              c.score ??
+              0
+            ),
+          0
+        ) / total
+      ).toFixed(2)
+    : "0.00";
+  
+
+  function exportCSV() {
+
+    const headers = [
+      "Rank",
+      "Candidate ID",
+      "Hybrid Score",
+      "Semantic Match (%)",
+      "Risk Flags",
+    ];
+
+    const csvRows = filteredRows.map((candidate) => {
+
+      const id =
+        candidate.candidate_id ??
+        candidate.id ??
+        candidate.candidateId ??
+        "";
+
+      const score = Number(
+        candidate.hybrid_score ??
+        candidate.score ??
+        0
+      ).toFixed(2);
+
+      const semantic = Math.round(
+        (candidate.semantic_similarity_score ?? 0) * 100
+      );
+
+      const risks =
+        candidate.risk_flags
+          ? (
+              typeof candidate.risk_flags === "string"
+                ? JSON.parse(candidate.risk_flags || "[]")
+                : candidate.risk_flags
+            ).length
+          : 0;
+
+      return [
+        candidate.rank,
+        id,
+        score,
+        semantic,
+        risks,
+      ].join(",");
+
+    });
+
+    const csv = [
+      headers.join(","),
+      ...csvRows,
+    ].join("\n");
+
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    link.download = "candidate_rankings.csv";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+  }
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">Candidate Rankings</h1>
-          <p className="mt-1 text-sm text-zinc-600">Recruiter-first view: score, match, and evidence cues.</p>
+          <h1 className="text-2xl font-bold text-zinc-900">
+            Candidate Rankings
+          </h1>
+
+          <p className="mt-1 text-sm text-zinc-600">
+            Recruiter-first view: score, match, and evidence cues.
+          </p>
         </div>
+
+        <button
+          onClick={exportCSV}
+          className="rounded-lg bg-blue-600 px-5 py-2 font-medium text-white hover:bg-blue-700"
+        >
+          Export CSV
+        </button>
+
       </div>
 
       <Card className="p-5">
@@ -49,7 +202,7 @@ export default function CandidateRankingPage() {
           <div className="md:col-span-2">
             <div className="text-xs font-medium text-zinc-500">Search candidates</div>
             <div className="mt-2">
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, skill keyword, etc." />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search Candidate ID..." />
             </div>
           </div>
 
@@ -68,17 +221,74 @@ export default function CandidateRankingPage() {
           </div>
 
           <div>
-            <div className="text-xs font-medium text-zinc-500">Job ID (optional)</div>
-            <div className="mt-2">
-              <Input value={jobId ?? ''} onChange={(e) => setJobId(e.target.value || null)} placeholder="e.g. 1" />
+            <div className="text-xs font-medium text-zinc-500">
+              Risk Filter
             </div>
-          </div>
-        </div>
 
-        <div className="mt-4 text-xs text-zinc-500">
-          Note: backend endpoint shapes may differ. This UI expects a list of candidates with id + score fields.
-        </div>
-      </Card>
+            <div className="mt-2">
+              <Select
+                value={riskFilter}
+                onChange={(e) => setRiskFilter(e.target.value)}
+                options={[
+                  { value: "all", label: "All Candidates" },
+                  { value: "safe", label: "Safe Candidates" },
+                  { value: "flagged", label: "Risk Flagged" },
+                ]}
+              />
+            </div>
+            </div>
+
+            </div>
+
+            <div className="mt-4 text-xs text-zinc-500">
+              Note: backend endpoint shapes may differ. This UI expects a list of candidates with id + score fields.
+            </div>
+
+            </Card>
+
+            <div className="grid gap-4 md:grid-cols-4">
+
+              <Card className="p-5">
+                <div className="text-sm text-zinc-500">
+                  Showing Candidates
+                </div>
+
+                <div className="mt-2 text-3xl font-bold">
+                  {total}
+                </div>
+              </Card>
+
+              <Card className="p-5">
+                <div className="text-sm text-zinc-500">
+                  Average Score
+                </div>
+
+                <div className="mt-2 text-3xl font-bold text-blue-600">
+                  {averageScore}
+                </div>
+              </Card>
+
+              <Card className="p-5">
+                <div className="text-sm text-zinc-500">
+                  Safe Candidates
+                </div>
+
+                <div className="mt-2 text-3xl font-bold text-green-600">
+                  {safeCandidates}
+                </div>
+              </Card>
+
+              <Card className="p-5">
+                <div className="text-sm text-zinc-500">
+                  Risk Candidates
+                </div>
+
+                <div className="mt-2 text-3xl font-bold text-red-600">
+                  {riskCandidates}
+                </div>
+              </Card>
+
+            </div>
 
       <Card className="p-0">
         {loading ? (
@@ -89,7 +299,7 @@ export default function CandidateRankingPage() {
           <div className="p-5">
             <ErrorState message={String(error?.message ?? error)} />
           </div>
-        ) : rows.length === 0 ? (
+        ) : filteredRows.length === 0 ? (
           <div className="p-5">
             <EmptyState title="No candidates found" description="Try changing search or sort." />
           </div>
@@ -107,7 +317,7 @@ export default function CandidateRankingPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 bg-white text-sm">
-                {rows.map((c) => {
+                {filteredRows.map((c) => {
                   const id = c.candidate_id ?? c.id ?? c.candidateId
                   const score =
                     c.hybrid_score ??
@@ -152,6 +362,7 @@ export default function CandidateRankingPage() {
                       </td>
 
                       <td className="px-4 py-3">
+
                         <Link
                           to={`/candidate/${id}`}
                           className="font-semibold text-zinc-900 hover:underline"
@@ -159,18 +370,10 @@ export default function CandidateRankingPage() {
                           {id}
                         </Link>
 
-                        <td className="px-4 py-3">
-                          <Link
-                            to={`/candidate/${id}`}
-                            className="font-semibold text-zinc-900 hover:underline"
-                          >
-                            {id}
-                          </Link>
+                        <div className="mt-1 text-xs text-zinc-500">
+                          Hybrid Score: {Number(score).toFixed(2)}
+                        </div>
 
-                          <div className="mt-1 text-xs text-zinc-500">
-                            Hybrid Score: {Number(score).toFixed(2)}
-                          </div>
-                        </td>
                       </td>
 
                       <td className="px-4 py-3">

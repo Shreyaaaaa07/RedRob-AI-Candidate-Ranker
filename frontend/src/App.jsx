@@ -7,6 +7,7 @@ import CandidateRankingPage from './pages/CandidateRankingPage'
 import CandidateDetailsPage from './pages/CandidateDetailsPage'
 import ExplainabilityPage from './pages/ExplainabilityPage'
 import AnalyticsPage from "./pages/AnalyticsPage";
+import CandidateComparisonPage from "./pages/CandidateComparisonPage";
 
 
 export default function App() {
@@ -24,6 +25,10 @@ export default function App() {
 
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route
+          path="/compare"
+          element={<CandidateComparisonPage />}
+        />
       </Route>
     </Routes>
   )

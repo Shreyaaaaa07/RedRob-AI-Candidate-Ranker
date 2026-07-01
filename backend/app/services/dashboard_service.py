@@ -15,6 +15,8 @@ class DashboardService:
             "risk_flagged_candidates": 0,
             "average_match_score": None,
             "top_candidate_score": None,
+            "top_candidates": [],
+            "ai_insights": [],
         }
 
         try:
@@ -44,6 +46,36 @@ class DashboardService:
                         float(df["hybrid_score"].max()),
                         2,
                     )
+
+                    high_score = 60
+
+                    stats["ai_insights"] = [
+                        f"{stats['total_candidates'] - stats['risk_flagged_candidates']} candidates are low risk.",
+                        f"Average hybrid score is {stats['average_match_score']}.",
+                        f"{len(df[df['hybrid_score'] >= high_score])} candidates scored above {high_score}.",
+                        f"{stats['risk_flagged_candidates']} candidates require recruiter review."
+                    ]
+
+                    top_df = (
+                        df.sort_values("hybrid_score", ascending=False)
+                        .head(5)
+                    )
+
+                    stats["ai_insights"].append(
+                        f"Top candidate is {top_df.iloc[0]['candidate_id']} with score {top_df.iloc[0]['hybrid_score']:.2f}."
+                    )
+
+                    stats["top_candidates"] = []
+
+                    for _, row in top_df.iterrows():
+
+                        stats["top_candidates"].append(
+                            {
+                                "rank": int(row["rank"]),
+                                "candidate_id": row["candidate_id"],
+                                "hybrid_score": round(float(row["hybrid_score"]), 2),
+                            }
+                        )
 
         except Exception as e:
 

@@ -3,10 +3,44 @@ import Card from "../components/ui/Card";
 import Spinner from "../components/ui/Spinner";
 import ErrorState from "../components/ui/ErrorState";
 import useAnalytics from "../hooks/useAnalytics";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 export default function AnalyticsPage() {
 
   const { data, loading, error } = useAnalytics();
+
+  const chartData = Object.entries(
+    data?.score_distribution ?? {}
+  ).map(([range, count]) => ({
+    range,
+    count,
+  }));
+
+  const riskData = [
+  {
+    name: "Safe",
+    value:
+      (data?.total_candidates ?? 0) -
+      (data?.risk_candidates ?? 0),
+  },
+  {
+    name: "Risk",
+    value: data?.risk_candidates ?? 0,
+  },
+];
+
+  const COLORS = ["#22c55e", "#ef4444"];
 
   if (loading)
     return <Spinner label="Loading analytics..." />;
@@ -81,39 +115,65 @@ export default function AnalyticsPage() {
           Score Distribution
         </h2>
 
-        <div className="mt-5 space-y-4">
+        <div className="mt-6 h-80">
 
-          {Object.entries(data?.score_distribution ?? {}).map(
-            ([range, count]) => (
+          <ResponsiveContainer width="100%" height="100%">
 
-              <div key={range}>
+            <BarChart data={chartData}>
 
-                <div className="flex justify-between mb-1">
+              <XAxis dataKey="range" />
 
-                  <span>{range}</span>
+              <YAxis />
 
-                  <span>{count}</span>
+              <Tooltip />
 
-                </div>
+              <Bar
+                dataKey="count"
+                radius={[8, 8, 0, 0]}
+              />
 
-                <div className="h-3 rounded bg-zinc-200">
+            </BarChart>
 
-                  <div
-                    className="h-3 rounded bg-blue-600"
-                    style={{
-                      width: `${Math.min(
-                        count / (data?.total_candidates || 1) * 100,
-                        100
-                      )}%`
-                    }}
+          </ResponsiveContainer>
+
+        </div>
+
+      </Card>
+
+      <Card className="p-5">
+
+        <h2 className="text-xl font-semibold">
+          Risk Distribution
+        </h2>
+
+        <div className="mt-6 h-80">
+
+          <ResponsiveContainer width="100%" height="100%">
+
+            <PieChart>
+
+              <Pie
+                data={riskData}
+                dataKey="value"
+                nameKey="name"
+                outerRadius={100}
+                label
+              >
+                {riskData.map((entry, index) => (
+                  <Cell
+                    key={index}
+                    fill={COLORS[index % COLORS.length]}
                   />
+                ))}
+              </Pie>
 
-                </div>
+              <Tooltip />
 
-              </div>
+              <Legend />
 
-            )
-          )}
+            </PieChart>
+
+          </ResponsiveContainer>
 
         </div>
 
