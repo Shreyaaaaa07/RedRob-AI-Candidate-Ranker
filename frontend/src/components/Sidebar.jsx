@@ -6,13 +6,15 @@ function classNames(...classes) {
 }
 
 export default function Sidebar({ activePath }) {
+  
+  
   const nav = [
-    { to: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { to: '/job-description', label: 'Job Description', icon: '🧾' },
-    { to: '/candidate-rankings', label: 'Candidate Rankings', icon: '🏅' },
-    { to: '/explainability', label: 'Explainability', icon: '🔎' },
-    { to: '/analytics', label: 'Analytics', icon: '📈' },
-  ]
+    { to: "/dashboard", label: "Dashboard", icon: "📊" },
+    { to: "/job-description", label: "Job Description", icon: "🧾" },
+    { to: "/candidate-rankings", label: "Candidate Rankings", icon: "🏅" },
+    { to: "/compare", label: "Compare Candidates", icon: "⚖️" },
+    { to: "/analytics", label: "Analytics", icon: "📈" },
+  ];
 
   return (
     <aside className="hidden w-64 shrink-0 border-r bg-white lg:block">

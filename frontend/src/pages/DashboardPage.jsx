@@ -3,10 +3,12 @@ import Card from "../components/ui/Card";
 import Badge from "../components/ui/Badge";
 import { Link } from "react-router-dom";
 import { getDashboardSummary } from "../services/dashboardService";
+import { useNavigate } from "react-router-dom";
 
 export default function DashboardPage() {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function loadDashboard() {
@@ -53,7 +55,15 @@ export default function DashboardPage() {
             AI Powered
           </Badge>
 
-          <Badge variant="neutral">
+          <Badge
+            variant="neutral"
+            className="cursor-pointer"
+            onClick={() => {
+              if (dashboard.top_candidates?.length) {
+                navigate(`/explainability/${dashboard.top_candidates[0].candidate_id}`);
+              }
+            }}
+          >
             Explainable AI
           </Badge>
         </div>
